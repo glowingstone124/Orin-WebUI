@@ -1,23 +1,27 @@
 import React from 'react';
 import { StatusBadge } from '../components/StatusBadge';
-import { JobItem, OrinStatus, Pipeline } from '../types/orin';
+import { JobItem, OrinStatus, OverallDurationMetrics, Pipeline } from '../types/orin';
 
 interface DashboardViewProps {
   status: OrinStatus | null;
   pipelines: Pipeline[];
   jobs: JobItem[];
+  metrics: OverallDurationMetrics | null;
   onSelectPipeline: (pipeline: Pipeline) => void;
   onSelectJob: (jobId: string) => void;
   onNavigate: (view: 'pipelines' | 'jobs' | 'cluster' | 'settings') => void;
+  onOpenEvaluate: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   status,
   pipelines,
   jobs,
+  metrics,
   onSelectPipeline,
   onSelectJob,
   onNavigate,
+  onOpenEvaluate,
 }) => {
   const recentJobs = jobs.slice(0, 5);
   const queue = status?.queue;
@@ -36,6 +40,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       desc: `启用: ${pipelines.filter((p) => p.enabled).length}`,
       statusColor: 'var(--text-main)',
       action: () => onNavigate('pipelines'),
+    },
+    {
+      label: '平均执行耗时 (EVALUATE)',
+      value: metrics && metrics.totalRuns > 0 ? `${(metrics.avgDurationMs / 1000).toFixed(2)}s` : '--',
+      desc: metrics?.minDurationMs != null ? `最快 ${(metrics.minDurationMs / 1000).toFixed(1)}s / 最慢 ${(metrics.maxDurationMs! / 1000).toFixed(1)}s` : '点击查看详细评估',
+      statusColor: 'var(--primary)',
+      action: onOpenEvaluate,
     },
     {
       label: '累计执行任务',
@@ -61,25 +72,40 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1
           style={{
             fontSize: '1.5rem',
             fontWeight: 700,
             color: 'var(--title-color)',
             fontFamily: 'var(--font-mono)',
-            marginBottom: '4px',
           }}
         >
           控制台总览
         </h1>
+
+        <button
+          type="button"
+          onClick={onOpenEvaluate}
+          style={{
+            padding: '6px 14px',
+            backgroundColor: 'var(--card-surface)',
+            color: 'var(--primary)',
+            border: '1px solid var(--primary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+          }}
+        >
+          EVALUATE AVERAGE DURATION
+        </button>
       </div>
 
       {/* Metrics Row */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '16px',
         }}
       >
@@ -109,7 +135,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <div
               style={{
-                fontSize: '2rem',
+                fontSize: '1.75rem',
                 fontWeight: 700,
                 fontFamily: 'var(--font-mono)',
                 color: c.statusColor,
@@ -124,6 +150,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 fontSize: '0.75rem',
                 color: 'var(--text-muted)',
                 fontFamily: 'var(--font-mono)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
               {c.desc}
@@ -156,7 +185,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               color: 'var(--title-color)',
             }}
           >
-            快速触发流水线
+            流水线列表与平均耗时
           </h2>
           <button
             type="button"
@@ -170,13 +199,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               fontWeight: 600,
             }}
           >
-            查看所有 ({pipelines.length}) →
+            管理流水线 ({pipelines.length}) →
           </button>
         </div>
 
         {pipelines.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            尚未配置任何 Pipeline。请检查 Orin 的 `config.toml`。
+            尚未配置任何 Pipeline。请点击管理流水线新建。
           </div>
         ) : (
           <div
@@ -186,59 +215,69 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               gap: '12px',
             }}
           >
-            {pipelines.map((p) => (
-              <div
-                key={p.name}
-                style={{
-                  padding: '12px 16px',
-                  backgroundColor: 'var(--background-secondary)',
-                  border: '1px solid var(--split)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.875rem',
-                      color: 'var(--title-color)',
-                    }}
-                  >
-                    {p.name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--text-secondary)',
-                      marginTop: '2px',
-                    }}
-                  >
-                    Actions: {p.actions.length} 步
-                    {p.repository && ` | Repo: ${p.repository}`}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => onSelectPipeline(p)}
-                  disabled={!p.enabled}
+            {pipelines.map((p) => {
+              const pm = p.metrics;
+              return (
+                <div
+                  key={p.name}
                   style={{
-                    padding: '6px 12px',
-                    backgroundColor: 'var(--button-primary-bg)',
-                    color: 'var(--button-primary-text)',
-                    border: 'none',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
+                    padding: '12px 16px',
+                    backgroundColor: 'var(--background-secondary)',
+                    border: '1px solid var(--split)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  触发
-                </button>
-              </div>
-            ))}
+                  <div>
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.875rem',
+                        color: 'var(--title-color)',
+                      }}
+                    >
+                      {p.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-secondary)',
+                        marginTop: '2px',
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {pm && pm.runsCount > 0 ? (
+                        <span style={{ color: 'var(--primary)' }}>
+                          均耗: {(pm.avgDurationMs / 1000).toFixed(1)}s ({pm.runsCount}次)
+                        </span>
+                      ) : (
+                        <span>无运行样本</span>
+                      )}
+                      {p.repository && ` | ${p.repository}`}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onSelectPipeline(p)}
+                    disabled={!p.enabled}
+                    style={{
+                      padding: '6px 12px',
+                      backgroundColor: 'var(--button-primary-bg)',
+                      color: 'var(--button-primary-text)',
+                      border: 'none',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    触发
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

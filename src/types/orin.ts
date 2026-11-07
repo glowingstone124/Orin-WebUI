@@ -13,13 +13,36 @@ export interface OrinStatus {
   remotesCount: number;
 }
 
+export interface PipelineDurationMetrics {
+  pipelineName: string;
+  runsCount: number;
+  successfulCount: number;
+  failedCount: number;
+  avgDurationMs: number;
+  minDurationMs: number | null;
+  maxDurationMs: number | null;
+  lastDurationMs: number | null;
+  successRate: number;
+}
+
+export interface OverallDurationMetrics {
+  totalRuns: number;
+  avgDurationMs: number;
+  minDurationMs: number | null;
+  maxDurationMs: number | null;
+  successRate: number;
+  byPipeline: Record<string, PipelineDurationMetrics>;
+}
+
 export interface Pipeline {
   name: string;
   enabled: boolean;
   repository: string | null;
   triggers: string[];
   hasManualToken: boolean;
+  manualToken?: string | null;
   actions: string[];
+  metrics?: PipelineDurationMetrics;
 }
 
 export type JobStatusType = 'QUEUED' | 'RUNNING' | 'SUCCESS' | 'FAILED';

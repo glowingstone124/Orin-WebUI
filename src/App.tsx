@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { api } from './api/client';
+import { DurationEvaluateModal } from './components/DurationEvaluateModal';
 import { Header } from './components/Header';
+import { PipelineDetailModal } from './components/PipelineDetailModal';
+import { PipelineFormModal } from './components/PipelineFormModal';
 import { Sidebar, ViewType } from './components/Sidebar';
 import { TriggerModal } from './components/TriggerModal';
-import { JobItem, OrinStatus, Pipeline, RemoteNode } from './types/orin';
+import { JobItem, OrinStatus, OverallDurationMetrics, Pipeline, RemoteNode } from './types/orin';
 import { ClusterView } from './views/ClusterView';
 import { DashboardView } from './views/DashboardView';
 import { JobsView } from './views/JobsView';
@@ -16,8 +19,23 @@ export const App: React.FC = () => {
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [clusterNodes, setClusterNodes] = useState<RemoteNode[]>([]);
+  const [metrics, setMetrics] = useState<OverallDurationMetrics | null>(null);
+  const [availableActions, setAvailableActions] = useState<string[]>([]);
+
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [triggerPipeline, setTriggerPipeline] = useState<Pipeline | null>(null);
+  const [detailPipeline, setDetailPipeline] = useState<Pipeline | null>(null);
+  const [formModalState, setFormModalState] = useState<{
+    isOpen: boolean;
+    mode: 'new' | 'edit';
+    pipeline: Pipeline | null;
+  }>({
+    isOpen: false,
+    mode: 'new',
+    pipeline: null,
+  });
+  const [isEvaluateOpen, setIsEvaluateOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -57,17 +75,21 @@ export const App: React.FC = () => {
   const refreshAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [st, pList, jList, nList] = await Promise.allSettled([
+      const [st, pList, jList, nList, mMetrics, aList] = await Promise.allSettled([
         api.getStatus(),
         api.getPipelines(),
         api.getJobs(),
         api.getClusterNodes(),
+        api.getDurationMetrics(),
+        api.getAvailableActions(),
       ]);
 
       if (st.status === 'fulfilled') setStatus(st.value);
       if (pList.status === 'fulfilled') setPipelines(pList.value);
       if (jList.status === 'fulfilled') setJobs(jList.value);
       if (nList.status === 'fulfilled') setClusterNodes(nList.value);
+      if (mMetrics.status === 'fulfilled') setMetrics(mMetrics.value);
+      if (aList.status === 'fulfilled') setAvailableActions(aList.value);
     } finally {
       setLoading(false);
     }
@@ -75,7 +97,6 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     refreshAll();
-    // Periodic refresh every 6 seconds
     const interval = setInterval(refreshAll, 6000);
     return () => clearInterval(interval);
   }, [refreshAll]);
@@ -86,6 +107,16 @@ export const App: React.FC = () => {
     if (jobId) {
       setSelectedJobId(jobId);
       setView('jobs');
+    }
+  };
+
+  const handleDeletePipeline = async (name: string) => {
+    try {
+      await api.deletePipeline(name);
+      showToast(`流水线 ${name} 已删除`);
+      refreshAll();
+    } catch (err: unknown) {
+      showToast(`删除失败: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -131,12 +162,14 @@ export const App: React.FC = () => {
               status={status}
               pipelines={pipelines}
               jobs={jobs}
+              metrics={metrics}
               onSelectPipeline={(p) => setTriggerPipeline(p)}
               onSelectJob={(id) => {
                 setSelectedJobId(id);
                 setView('jobs');
               }}
               onNavigate={(target) => setView(target)}
+              onOpenEvaluate={() => setIsEvaluateOpen(true)}
             />
           )}
 
@@ -144,6 +177,15 @@ export const App: React.FC = () => {
             <PipelinesView
               pipelines={pipelines}
               onTriggerPipeline={(p) => setTriggerPipeline(p)}
+              onViewPipeline={(p) => setDetailPipeline(p)}
+              onEditPipeline={(p) =>
+                setFormModalState({ isOpen: true, mode: 'edit', pipeline: p })
+              }
+              onNewPipeline={() =>
+                setFormModalState({ isOpen: true, mode: 'new', pipeline: null })
+              }
+              onDeletePipeline={handleDeletePipeline}
+              onOpenEvaluateModal={() => setIsEvaluateOpen(true)}
             />
           )}
 
@@ -166,6 +208,46 @@ export const App: React.FC = () => {
           {view === 'settings' && <SettingsView onRefreshAll={refreshAll} />}
         </main>
       </div>
+
+      {/* View Pipeline Detail Modal */}
+      <PipelineDetailModal
+        pipeline={detailPipeline}
+        onClose={() => setDetailPipeline(null)}
+        onEdit={(p) => {
+          setDetailPipeline(null);
+          setFormModalState({ isOpen: true, mode: 'edit', pipeline: p });
+        }}
+        onTrigger={(p) => {
+          setDetailPipeline(null);
+          setTriggerPipeline(p);
+        }}
+        onDelete={handleDeletePipeline}
+      />
+
+      {/* New / Edit Pipeline Modal */}
+      <PipelineFormModal
+        isOpen={formModalState.isOpen}
+        mode={formModalState.mode}
+        pipeline={formModalState.pipeline}
+        availableActions={availableActions}
+        onClose={() => setFormModalState((prev) => ({ ...prev, isOpen: false }))}
+        onSaved={() => {
+          showToast(
+            formModalState.mode === 'new'
+              ? '新流水线创建成功'
+              : '流水线配置已更新'
+          );
+          refreshAll();
+        }}
+      />
+
+      {/* Evaluate Average Duration Modal */}
+      <DurationEvaluateModal
+        isOpen={isEvaluateOpen}
+        metrics={metrics}
+        onClose={() => setIsEvaluateOpen(false)}
+        onRefresh={refreshAll}
+      />
 
       {/* Trigger Modal */}
       <TriggerModal

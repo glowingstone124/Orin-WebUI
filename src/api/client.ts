@@ -1,4 +1,14 @@
-import { JobDetail, JobItem, JobLogs, OrinStatus, Pipeline, RemoteNode, TriggerRequest, TriggerResponse } from '../types/orin';
+import {
+  JobDetail,
+  JobItem,
+  JobLogs,
+  OrinStatus,
+  OverallDurationMetrics,
+  Pipeline,
+  RemoteNode,
+  TriggerRequest,
+  TriggerResponse,
+} from '../types/orin';
 
 const STORAGE_KEY_ENDPOINT = 'orin_api_endpoint';
 const STORAGE_KEY_TOKEN = 'orin_manual_token';
@@ -57,6 +67,21 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export const api = {
   getStatus: (): Promise<OrinStatus> => request<OrinStatus>('/api/status'),
   getPipelines: (): Promise<Pipeline[]> => request<Pipeline[]>('/api/pipelines'),
+  getPipeline: (name: string): Promise<Pipeline> => request<Pipeline>(`/api/pipelines/${encodeURIComponent(name)}`),
+  createPipeline: (pipeline: Partial<Pipeline>): Promise<{ message: string }> =>
+    request<{ message: string }>('/api/pipelines', {
+      method: 'POST',
+      body: JSON.stringify(pipeline),
+    }),
+  updatePipeline: (name: string, pipeline: Partial<Pipeline>): Promise<{ message: string }> =>
+    request<{ message: string }>(`/api/pipelines/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify(pipeline),
+    }),
+  deletePipeline: (name: string): Promise<{ message: string }> =>
+    request<{ message: string }>(`/api/pipelines/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    }),
   getJobs: (): Promise<JobItem[]> => request<JobItem[]>('/api/jobs'),
   getJobDetail: (jobId: string): Promise<JobDetail> => request<JobDetail>(`/api/jobs/${encodeURIComponent(jobId)}`),
   getJobLogs: (jobId: string): Promise<JobLogs> => request<JobLogs>(`/api/jobs/${encodeURIComponent(jobId)}/logs`),
@@ -66,6 +91,9 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  getDurationMetrics: (): Promise<OverallDurationMetrics> =>
+    request<OverallDurationMetrics>('/api/metrics/evaluate'),
+  getAvailableActions: (): Promise<string[]> => request<string[]>('/api/actions'),
   getArtifactUrl: (jobId: string, artifactName: string): string => {
     const base = getStoredEndpoint();
     return `${base}/remote/jobs/${encodeURIComponent(jobId)}/artifacts/${encodeURIComponent(artifactName)}`;
