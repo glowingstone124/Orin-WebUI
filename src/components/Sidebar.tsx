@@ -1,12 +1,13 @@
 import React from 'react';
 
-export type ViewType = 'dashboard' | 'pipelines' | 'jobs' | 'cluster' | 'settings';
+export type ViewType = 'dashboard' | 'pipelines' | 'scripts' | 'jobs' | 'cluster' | 'settings';
 
 interface SidebarProps {
   currentView: ViewType;
   onSelectView: (view: ViewType) => void;
   jobsCount: number;
   pipelinesCount: number;
+  scriptsCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -14,13 +15,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectView,
   jobsCount,
   pipelinesCount,
+  scriptsCount,
 }) => {
   const navItems: { id: ViewType; label: string; code: string; count?: number }[] = [
     { id: 'dashboard', label: '控制台总览', code: '01' },
     { id: 'pipelines', label: '流水线配置', code: '02', count: pipelinesCount },
-    { id: 'jobs', label: '任务与日志', code: '03', count: jobsCount },
-    { id: 'cluster', label: '多节点集群', code: '04' },
-    { id: 'settings', label: '服务设置', code: '05' },
+    { id: 'scripts', label: '动作脚本库', code: '03', count: scriptsCount },
+    { id: 'jobs', label: '任务与日志', code: '04', count: jobsCount },
+    { id: 'cluster', label: '多节点集群', code: '05' },
+    { id: 'settings', label: '服务设置', code: '06' },
   ];
 
   return (

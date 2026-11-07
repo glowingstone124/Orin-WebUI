@@ -86,3 +86,29 @@ export interface TriggerResponse {
   status: string;
   message: string;
 }
+
+export interface ActionSummary {
+  name: string;
+  entry: string;
+  entryType: 'kts' | 'sh' | 'unknown';
+  lastModified: number;
+  size: number;
+}
+
+export interface ActionDetail {
+  name: string;
+  entry: string;
+  entryType: 'kts' | 'sh' | 'unknown';
+  content: string;
+  manifestContent: string;
+  lastModified: number;
+  size: number;
+}
+
+export interface ActionSavePayload {
+  name: string;
+  entry?: string;
+  scriptContent: string;
+  manifestContent?: string;
+}
+

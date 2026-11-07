@@ -1,4 +1,7 @@
 import {
+  ActionDetail,
+  ActionSavePayload,
+  ActionSummary,
   JobDetail,
   JobItem,
   JobLogs,
@@ -94,6 +97,23 @@ export const api = {
   getDurationMetrics: (): Promise<OverallDurationMetrics> =>
     request<OverallDurationMetrics>('/api/metrics/evaluate'),
   getAvailableActions: (): Promise<string[]> => request<string[]>('/api/actions'),
+  getActionSummaries: (): Promise<ActionSummary[]> => request<ActionSummary[]>('/api/actions?details=true'),
+  getActionDetail: (name: string): Promise<ActionDetail> =>
+    request<ActionDetail>(`/api/actions/${encodeURIComponent(name)}`),
+  saveAction: (payload: ActionSavePayload): Promise<{ message: string }> =>
+    request<{ message: string }>('/api/actions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateAction: (name: string, payload: ActionSavePayload): Promise<{ message: string }> =>
+    request<{ message: string }>(`/api/actions/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  deleteAction: (name: string): Promise<{ message: string }> =>
+    request<{ message: string }>(`/api/actions/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    }),
   getArtifactUrl: (jobId: string, artifactName: string): string => {
     const base = getStoredEndpoint();
     return `${base}/remote/jobs/${encodeURIComponent(jobId)}/artifacts/${encodeURIComponent(artifactName)}`;

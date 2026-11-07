@@ -7,6 +7,7 @@ interface PipelineDetailModalProps {
   onEdit: (pipeline: Pipeline) => void;
   onTrigger: (pipeline: Pipeline) => void;
   onDelete: (name: string) => void;
+  onEditScript?: (name: string) => void;
 }
 
 export const PipelineDetailModal: React.FC<PipelineDetailModalProps> = ({
@@ -15,6 +16,7 @@ export const PipelineDetailModal: React.FC<PipelineDetailModalProps> = ({
   onEdit,
   onTrigger,
   onDelete,
+  onEditScript,
 }) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -243,6 +245,7 @@ export const PipelineDetailModal: React.FC<PipelineDetailModalProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
+                    justifyContent: 'space-between',
                     gap: '12px',
                     padding: '8px 12px',
                     backgroundColor: 'var(--background-secondary)',
@@ -251,10 +254,30 @@ export const PipelineDetailModal: React.FC<PipelineDetailModalProps> = ({
                     fontSize: '0.8125rem',
                   }}
                 >
-                  <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
-                    #{index + 1}
-                  </span>
-                  <span>{act}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                      #{index + 1}
+                    </span>
+                    <span>{act}</span>
+                  </div>
+                  {onEditScript && (
+                    <button
+                      type="button"
+                      onClick={() => onEditScript(act)}
+                      style={{
+                        padding: '2px 8px',
+                        backgroundColor: 'var(--background)',
+                        border: '1px solid var(--split)',
+                        color: 'var(--primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      EDIT SCRIPT
+                    </button>
+                  )}
                 </div>
               ))
             )}

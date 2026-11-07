@@ -9,6 +9,7 @@ interface PipelineFormModalProps {
   availableActions: string[];
   onClose: () => void;
   onSaved: () => void;
+  onEditScript?: (name?: string) => void;
 }
 
 export const PipelineFormModal: React.FC<PipelineFormModalProps> = ({
@@ -18,6 +19,7 @@ export const PipelineFormModal: React.FC<PipelineFormModalProps> = ({
   availableActions,
   onClose,
   onSaved,
+  onEditScript,
 }) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -387,6 +389,23 @@ export const PipelineFormModal: React.FC<PipelineFormModalProps> = ({
             >
               + ADD STEP
             </button>
+            {onEditScript && (
+              <button
+                type="button"
+                onClick={() => onEditScript(newActionInput.trim() || undefined)}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: 'var(--background)',
+                  color: 'var(--primary)',
+                  border: '1px solid var(--primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                }}
+              >
+                EDIT / NEW SCRIPT
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '32px' }}>
@@ -411,6 +430,24 @@ export const PipelineFormModal: React.FC<PipelineFormModalProps> = ({
                 >
                   <span style={{ color: 'var(--primary)', fontWeight: 600 }}>#{index + 1}</span>
                   <span>{act}</span>
+                  {onEditScript && (
+                    <button
+                      type="button"
+                      onClick={() => onEditScript(act)}
+                      title={`编辑脚本: ${act}`}
+                      style={{
+                        padding: '1px 5px',
+                        fontSize: '0.6875rem',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--split)',
+                        color: 'var(--primary)',
+                        fontFamily: 'var(--font-mono)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      EDIT
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleRemoveAction(index)}

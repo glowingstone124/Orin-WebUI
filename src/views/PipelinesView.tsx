@@ -9,6 +9,7 @@ interface PipelinesViewProps {
   onNewPipeline: () => void;
   onDeletePipeline: (name: string) => void;
   onOpenEvaluateModal: () => void;
+  onEditScript?: (name: string) => void;
 }
 
 export const PipelinesView: React.FC<PipelinesViewProps> = ({
@@ -19,6 +20,7 @@ export const PipelinesView: React.FC<PipelinesViewProps> = ({
   onNewPipeline,
   onDeletePipeline,
   onOpenEvaluateModal,
+  onEditScript,
 }) => {
   const [filter, setFilter] = useState('');
 
@@ -336,6 +338,24 @@ export const PipelinesView: React.FC<PipelinesViewProps> = ({
                             #{index + 1}
                           </span>
                           <span>{act}</span>
+                          {onEditScript && (
+                            <button
+                              type="button"
+                              onClick={() => onEditScript(act)}
+                              title={`编辑脚本: ${act}`}
+                              style={{
+                                padding: '1px 5px',
+                                fontSize: '0.6875rem',
+                                backgroundColor: 'transparent',
+                                border: '1px solid var(--split)',
+                                color: 'var(--primary)',
+                                fontFamily: 'var(--font-mono)',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              EDIT SCRIPT
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>

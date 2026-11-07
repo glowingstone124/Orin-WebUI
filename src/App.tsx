@@ -4,19 +4,22 @@ import { DurationEvaluateModal } from './components/DurationEvaluateModal';
 import { Header } from './components/Header';
 import { PipelineDetailModal } from './components/PipelineDetailModal';
 import { PipelineFormModal } from './components/PipelineFormModal';
+import { ScriptEditorModal } from './components/ScriptEditorModal';
 import { Sidebar, ViewType } from './components/Sidebar';
 import { TriggerModal } from './components/TriggerModal';
-import { JobItem, OrinStatus, OverallDurationMetrics, Pipeline, RemoteNode } from './types/orin';
+import { ActionSummary, JobItem, OrinStatus, OverallDurationMetrics, Pipeline, RemoteNode } from './types/orin';
 import { ClusterView } from './views/ClusterView';
 import { DashboardView } from './views/DashboardView';
 import { JobsView } from './views/JobsView';
 import { PipelinesView } from './views/PipelinesView';
+import { ScriptsView } from './views/ScriptsView';
 import { SettingsView } from './views/SettingsView';
 
 export const App: React.FC = () => {
   const [view, setView] = useState<ViewType>('dashboard');
   const [status, setStatus] = useState<OrinStatus | null>(null);
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [scripts, setScripts] = useState<ActionSummary[]>([]);
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [clusterNodes, setClusterNodes] = useState<RemoteNode[]>([]);
   const [metrics, setMetrics] = useState<OverallDurationMetrics | null>(null);
@@ -33,6 +36,15 @@ export const App: React.FC = () => {
     isOpen: false,
     mode: 'new',
     pipeline: null,
+  });
+  const [scriptModalState, setScriptModalState] = useState<{
+    isOpen: boolean;
+    mode: 'new' | 'edit';
+    scriptName?: string | null;
+  }>({
+    isOpen: false,
+    mode: 'new',
+    scriptName: null,
   });
   const [isEvaluateOpen, setIsEvaluateOpen] = useState(false);
 
@@ -75,13 +87,14 @@ export const App: React.FC = () => {
   const refreshAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [st, pList, jList, nList, mMetrics, aList] = await Promise.allSettled([
+      const [st, pList, jList, nList, mMetrics, aList, sList] = await Promise.allSettled([
         api.getStatus(),
         api.getPipelines(),
         api.getJobs(),
         api.getClusterNodes(),
         api.getDurationMetrics(),
         api.getAvailableActions(),
+        api.getActionSummaries(),
       ]);
 
       if (st.status === 'fulfilled') setStatus(st.value);
@@ -90,6 +103,7 @@ export const App: React.FC = () => {
       if (nList.status === 'fulfilled') setClusterNodes(nList.value);
       if (mMetrics.status === 'fulfilled') setMetrics(mMetrics.value);
       if (aList.status === 'fulfilled') setAvailableActions(aList.value);
+      if (sList.status === 'fulfilled') setScripts(sList.value);
     } finally {
       setLoading(false);
     }
@@ -120,6 +134,18 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleOpenNewScript = () => {
+    setScriptModalState({ isOpen: true, mode: 'new', scriptName: null });
+  };
+
+  const handleOpenEditScript = (name?: string) => {
+    if (name) {
+      setScriptModalState({ isOpen: true, mode: 'edit', scriptName: name });
+    } else {
+      setScriptModalState({ isOpen: true, mode: 'new', scriptName: null });
+    }
+  };
+
   return (
     <div
       style={{
@@ -145,6 +171,7 @@ export const App: React.FC = () => {
           onSelectView={setView}
           jobsCount={jobs.length}
           pipelinesCount={pipelines.length}
+          scriptsCount={scripts.length}
         />
 
         <main
@@ -186,6 +213,17 @@ export const App: React.FC = () => {
               }
               onDeletePipeline={handleDeletePipeline}
               onOpenEvaluateModal={() => setIsEvaluateOpen(true)}
+              onEditScript={handleOpenEditScript}
+            />
+          )}
+
+          {view === 'scripts' && (
+            <ScriptsView
+              scripts={scripts}
+              loading={loading}
+              onRefresh={refreshAll}
+              onNewScript={handleOpenNewScript}
+              onEditScript={handleOpenEditScript}
             />
           )}
 
@@ -222,6 +260,7 @@ export const App: React.FC = () => {
           setTriggerPipeline(p);
         }}
         onDelete={handleDeletePipeline}
+        onEditScript={handleOpenEditScript}
       />
 
       {/* New / Edit Pipeline Modal */}
@@ -236,6 +275,23 @@ export const App: React.FC = () => {
             formModalState.mode === 'new'
               ? '新流水线创建成功'
               : '流水线配置已更新'
+          );
+          refreshAll();
+        }}
+        onEditScript={handleOpenEditScript}
+      />
+
+      {/* Action Script Editor Modal */}
+      <ScriptEditorModal
+        isOpen={scriptModalState.isOpen}
+        mode={scriptModalState.mode}
+        scriptName={scriptModalState.scriptName}
+        onClose={() => setScriptModalState((prev) => ({ ...prev, isOpen: false }))}
+        onSaved={() => {
+          showToast(
+            scriptModalState.mode === 'new'
+              ? '动作脚本创建成功'
+              : `脚本 ${scriptModalState.scriptName} 已保存`
           );
           refreshAll();
         }}
