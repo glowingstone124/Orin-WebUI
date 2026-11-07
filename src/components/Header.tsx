@@ -16,7 +16,6 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   onRefresh,
 }) => {
-  const isOnline = Boolean(status && status.status === 'UP');
   const queueSize = status?.queue.queuedCount ?? 0;
   const activeCount = status?.queue.activeCount ?? 0;
 
@@ -36,71 +35,30 @@ export const Header: React.FC<HeaderProps> = ({
         跳至主内容区
       </a>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <div
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <div
-            style={{
-              width: '14px',
-              height: '14px',
-              backgroundColor: 'var(--primary)',
-            }}
-          />
-          <span
-            style={{
-              fontSize: '1.125rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              color: 'var(--title-color)',
-              fontFamily: 'var(--font-mono)',
-            }}
-          >
-            ORIN
-          </span>
-          <span
-            style={{
-              fontSize: '0.75rem',
-              color: 'var(--text-secondary)',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              paddingLeft: '6px',
-              borderLeft: '1px solid var(--split)',
-            }}
-          >
-            CI/CD Engine
-          </span>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '2px 8px',
-            backgroundColor: isOnline
-              ? 'color-mix(in srgb, var(--success) 12%, transparent)'
-              : 'color-mix(in srgb, var(--error) 12%, transparent)',
-            border: `1px solid ${isOnline ? 'var(--success)' : 'var(--error)'}`,
-            fontSize: '0.75rem',
+            fontSize: '1.125rem',
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            color: 'var(--title-color)',
             fontFamily: 'var(--font-mono)',
-            fontWeight: 600,
-            color: isOnline ? 'var(--success)' : 'var(--error)',
           }}
         >
-          <span
-            style={{
-              width: '6px',
-              height: '6px',
-              backgroundColor: isOnline ? 'var(--success)' : 'var(--error)',
-            }}
-          />
-          {isOnline ? `ONLINE v${status?.version || '1.0'}` : 'DISCONNECTED'}
-        </div>
+          ORIN
+        </span>
+        <span
+          style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-secondary)',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            paddingLeft: '6px',
+            borderLeft: '1px solid var(--split)',
+          }}
+        >
+          CI/CD Engine
+        </span>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>

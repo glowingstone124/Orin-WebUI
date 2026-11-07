@@ -108,8 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           color: 'var(--text-muted)',
         }}
       >
-        <div>QO / CI SYSTEM</div>
-        <div style={{ marginTop: '4px' }}>2026 QUANTUM ORIGINAL</div>
+        2026 Holographic Lab
       </div>
     </aside>
   );
